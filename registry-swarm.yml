@@ -1,0 +1,99 @@
+# https://www.frakkingsweet.com/create-your-own-docker-registry/
+#
+# Create docker secrets
+# docker secret create certificates.docker-hub.cynicsoft.net.key.pem /volume1/docker/swarm/conf/shared/ssl/docker/docker-hub.cynicsoft.net.key.pem
+# docker secret create certificates.docker-hub.cynicsoft.net.pub.pem /volume1/docker/swarm/conf/shared/ssl/docker/docker-hub.cynicsoft.net.pub.pem
+#
+# Create password
+# docker run --rm --entrypoint htpasswd httpd:2 -Bbn docker <password> > /volume1/docker/swarm/data/docker-stack/registry/auth/htpasswd
+
+# Garbage collect registry (run after delete)
+# docker exec -it <container id> registry garbage-collect /etc/docker/registry/config.yml
+services:
+  registry:
+    image: registry:2
+    deploy:
+      placement:
+        # Docker (20.10.3) on Synology bug where env vars from env_file 
+        # not set on container.
+        # constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
+          - node.hostname != ${NAS_HOSTNAME}
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-net
+        - traefik.http.routers.docker-registry.rule=Host(`docker-hub.cynicsoft.net`)
+        - traefik.http.routers.docker-registry.entrypoints=https
+        - traefik.http.routers.docker-registry.middlewares=internal-whitelist
+        - traefik.http.services.docker-registry.loadbalancer.server.scheme=https
+        - traefik.http.services.docker-registry.loadbalancer.server.port=5000
+    env_file: ["${ENV_DIR:-swarm-envs}/swarm/registry-stack/registry.env"]
+    volumes:
+      - type: volume
+        source: registry.library
+        target: /var/lib/registry
+        volume:
+          nocopy: true
+      - type: volume
+        source: registry.auth
+        target: /auth
+    networks:
+      - traefik-net
+      - default
+    secrets:
+      - certificate.key
+      - certificate.crt
+
+  web:
+    image: joxit/docker-registry-ui:latest
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-net
+        - traefik.http.routers.docker-registry-web.rule=Host(`docker-hub-browser.cynicsoft.net`)
+        - traefik.http.routers.docker-registry-web.entrypoints=https
+        - traefik.http.routers.docker-registry-web.middlewares=internal-whitelist
+        - traefik.http.services.docker-registry-web.loadbalancer.server.port=80
+        - traefik.http.services.docker-registry-web.loadbalancer.server.scheme=http
+    networks:
+      - traefik-net
+      - default
+    environment:
+      - DELETE_IMAGES=true
+      - REGISTRY_TITLE=My Private Docker Registry
+      - NGINX_PROXY_PASS_URL=https://registry:5000
+      - SINGLE_REGISTRY=true
+
+
+volumes:
+  registry.library:
+    driver_opts:
+      type: nfs
+      o: addr=${NAS_HOST},nolock,noresvport,vers=2
+      device: :${DATADIR}/docker-stack/registry/library
+  registry.auth:
+    driver_opts:
+      type: nfs
+      o: addr=${NAS_HOST},nolock,noresvport,vers=2
+      device: :${DATADIR}/docker-stack/registry/auth
+
+
+networks:
+  traefik-net:
+    external: true
+
+
+secrets:
+  certificate.key:
+    external: true
+    name: certificates.docker-hub.cynicsoft.net.key.pem
+  certificate.crt:
+    external: true
+    name: certificates.docker-hub.cynicsoft.net.pub.pem
