@@ -51,7 +51,3 @@ volumes:
 trigger:
   event: [push, custom, promote]
   branch: [master]
-  repo:
-    include:
-      - jon-chen-configs/swarm-env-config
-      - jon-chen-configs/registry-stack
