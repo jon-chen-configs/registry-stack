@@ -63,6 +63,11 @@ services:
         - traefik.http.routers.docker-registry-web.middlewares=internal-whitelist
         - traefik.http.services.docker-registry-web.loadbalancer.server.port=80
         - traefik.http.services.docker-registry-web.loadbalancer.server.scheme=http
+        - homepage.name=Registry Browser 
+        - homepage.group=Network
+        - homepage.icon=https://raw.githubusercontent.com/modem7/MiscAssets/master/Icons/Dashboard-Icons/docker.png
+        - homepage.href=https://docker-hub-browser.cynicsoft.net/
+        - homepage.description=Docker registry browser
     networks:
       - traefik-net
       - default
