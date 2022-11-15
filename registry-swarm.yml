@@ -1,11 +1,11 @@
 # https://www.frakkingsweet.com/create-your-own-docker-registry/
 #
 # Create docker secrets
-# docker secret create certificates.docker-hub.cynicsoft.net.key.pem /volume1/docker/swarm/conf/shared/ssl/docker/docker-hub.cynicsoft.net.key.pem
-# docker secret create certificates.docker-hub.cynicsoft.net.pub.pem /volume1/docker/swarm/conf/shared/ssl/docker/docker-hub.cynicsoft.net.pub.pem
+# docker secret create certificates.docker-hub.cynicsoft.net.key.pem /volume4/docker/swarm/conf/shared/ssl/docker/docker-hub.cynicsoft.net.key.pem
+# docker secret create certificates.docker-hub.cynicsoft.net.pub.pem /volume4/docker/swarm/conf/shared/ssl/docker/docker-hub.cynicsoft.net.pub.pem
 #
 # Create password
-# docker run --rm --entrypoint htpasswd httpd:2 -Bbn docker <password> > /volume1/docker/swarm/data/docker-stack/registry/auth/htpasswd
+# docker run --rm --entrypoint htpasswd httpd:2 -Bbn docker <password> > /volume4/docker/swarm/data/docker-stack/registry/auth/htpasswd
 
 # Garbage collect registry (run after delete)
 # docker exec -it <container id> registry garbage-collect /etc/docker/registry/config.yml
